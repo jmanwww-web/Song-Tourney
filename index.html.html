@@ -1,0 +1,228 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Song Bracket</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f4f4f4;--fg:#121212;--mut:#666;--card:#fff;--bd:#dcdcdc;--ac:#148a3c;--ok:#148a3c;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0b0b;--fg:#fff;--mut:#b3b3b3;--card:#181818;--bd:#2c2c2c;--ac:#1ed760;--ok:#1ed760;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b0b0b;--fg:#fff;--mut:#b3b3b3;--card:#181818;--bd:#2c2c2c;--ac:#1ed760;--ok:#1ed760;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:860px;margin:0 auto;padding:16px}
+h1{font:700 1.6rem/1.2 Georgia,serif;margin:.2em 0}h3{margin:1em 0 .3em}
+.s{color:var(--mut);font-size:.88rem}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.b{font:inherit;font-size:.9rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:8px 12px;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
+.b.on{border-color:var(--ac);color:var(--ac)}.b.p{background:var(--ac);color:var(--bg);border-color:var(--ac);font-weight:700}
+select,input[type=number],input[type=search]{font:inherit;font-size:.9rem;padding:8px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg)}
+textarea{width:100%;box-sizing:border-box;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:10px;padding:8px;font:.8rem monospace}
+.box{border:1px solid var(--bd);background:var(--card);border-radius:14px;padding:12px 14px;margin:10px 0}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;margin:12px 0}.or{align-self:center;color:var(--mut);font-weight:700}
+@media(max-width:640px){.vs{grid-template-columns:1fr}.or{text-align:center}}
+.card{border:2px solid var(--bd);background:var(--card);border-radius:16px;padding:16px;cursor:pointer;min-height:160px;display:flex;flex-direction:column;gap:4px}
+.card:hover{border-color:var(--ac)}.t{font-weight:700;font-size:1.25rem;line-height:1.25}.foot{margin-top:auto;display:flex;gap:8px;padding-top:10px;flex-wrap:wrap}
+.bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+.li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.9rem}
+label{display:block;margin:4px 0}canvas{max-width:100%;border-radius:12px}
+.bk{overflow:auto;scroll-snap-type:x mandatory;scroll-padding-left:6px;height:72vh;border:1px solid var(--bd);border-radius:12px;background:var(--card);position:relative}.bkh{display:flex;gap:8px;position:sticky;top:0;z-index:2;background:var(--card);padding:6px;border-bottom:1px solid var(--bd);width:max-content}.bkb{display:flex;gap:8px;padding:6px;width:max-content}.bkl{width:160px;font-size:.75rem;font-weight:700;color:var(--mut);flex:none}.bkc{display:flex;flex-direction:column;width:160px;flex:none;scroll-snap-align:start;overflow:hidden}.bki{display:flex;align-items:center;flex:none;height:var(--h,22px)}.bkc.gone .bki{display:none}.bkt{width:100%;box-sizing:border-box;font-size:.72rem;line-height:18px;height:18px;padding:0 6px;border-left:3px solid var(--bd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.bkt.w{border-color:var(--ok);font-weight:700}.bkt.l{opacity:.4}.card.win{border-color:var(--ok)}.bkt.hl{outline:2px solid var(--ac);outline-offset:-2px}
+</style></head><body><div id="app"></div>
+<script>
+/* ===== Song Bracket: single-file app. Sections: 1 helpers · 2 import · 3 rules · 4 setup · 5 engine · 6 views · 7 save/share ===== */
+const $=s=>document.querySelector(s),A=$("#app"),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let LIB=new Map,M={},CAT={},TXT="",THR=0,step="imp",S=null,view="m",tm=null,msg="",rows=[];
+const KEY="songbracket_v1",sv=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+function normalizeState(x){if(!x)return x;x.B=x.B||[];x.V=x.V||[];x.L=x.L||{};x.H=x.H||[];x.o=x.o||{};
+ if(!Array.isArray(x.wc)){if(x.wc&&typeof x.wc==="object"){const w={...x.wc,key:"wc_"+x.wc.id};x.wc=[w];if(x.L.wc!==undefined){x.L[w.key]=x.L.wc;delete x.L.wc}x.H=x.H.map(k=>k==="wc"?w.key:k)}else x.wc=[]}
+ x.wc=x.wc.map(w=>({...w,key:w.key||("wc_"+w.id)}));if(!Number.isFinite(x.o.rr))x.o.rr=0;delete x.RD;delete x.o.red;return x}
+try{S=normalizeState(JSON.parse(localStorage.getItem(KEY)||"null"))}catch(e){}
+/* 2 · IMPORT — song = {t:title,a:artist,l:album,y:year,p:popularity,d:ms,u:uri,n:plays,ad:added/first-heard ms,lib:bool} */
+function csv(t){const R=[];let r=[],f="",q=0;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=0}else f+=c}else if(c=='"')q=1;else if(c==","){r.push(f);f=""}else if(c=="\n"||c=="\r"){if(c=="\r"&&t[i+1]=="\n")i++;r.push(f);f="";R.push(r);r=[]}else f+=c}if(f||r.length){r.push(f);R.push(r)}return R}
+function add(o,plays){const k=(o.u||(o.t+"|"+o.a)).toLowerCase(),e=LIB.get(k);if(!e){LIB.set(k,o);return}
+ e.lib=e.lib||o.lib;e.n=(e.n||0)+(plays?o.n:0);for(const f of["y","p","d","u","l"])if(e[f]==null&&o[f]!=null)e[f]=o[f];if(o.ad&&(!e.ad||o.ad<e.ad))e.ad=o.ad}
+async function ingest(files){for(const f of files){const x=await f.text();try{
+ if(/\.csv$/i.test(f.name)){const R=csv(x),h=R[0].map(v=>v.trim().toLowerCase()),g=(...n)=>n.map(v=>h.indexOf(v)).find(i=>i>=0);
+  const[iu,it,ia,il,iy,ip,id,iA]=[g("track uri"),g("track name","name"),g("artist name(s)","artist name","artist"),g("album name","album"),g("release date"),g("popularity"),g("duration (ms)"),g("added at")];
+  for(const r of R.slice(1)){if(!r[it])continue;add({t:r[it],a:r[ia]||"",l:r[il]||"",y:+(r[iy]||"").slice(0,4)||null,p:r[ip]===""||r[ip]==null?null:+r[ip],d:+r[id]||null,u:r[iu]||null,ad:Date.parse(r[iA])||null,lib:true})}}
+ else{const j=JSON.parse(x);if(j.tracks)j.tracks.forEach(r=>r.track&&add({t:r.track,a:r.artist||"",l:r.album||"",u:r.uri||null,lib:true}));
+  else if(Array.isArray(j))j.forEach(r=>{if(!r.master_metadata_track_name||r.ms_played<3e4)return;add({t:r.master_metadata_track_name,a:r.master_metadata_album_artist_name||"",l:r.master_metadata_album_album_name||"",u:r.spotify_track_uri,n:1,ad:Date.parse(r.ts)||null,lib:false},1)})}
+ }catch(e){msg="Couldn’t read "+f.name+"."}}
+ msg=LIB.size+" unique songs loaded.";render()}
+/* 3 · RULES — auto-flag categories, free-text rules, per-song overrides */
+const CATS={live:["Live versions",s=>/\blive\b/i.test(s.t+" "+s.l)],alt:["Alternate takes & demos",s=>/alternate take|outtake|\bdemo\b|rehearsal/i.test(s.t+" "+s.l)],skit:["Skits, intros & interludes",s=>/\bskit\b|interlude|\bintro\b|\boutro\b/i.test(s.t)],short:["Under 60 seconds",s=>s.d&&s.d<6e4],rep:["Reprises",s=>/reprise/i.test(s.t)],ost:["Soundtrack & cast albums",s=>/soundtrack|original (motion picture|cast|score|broadway|london)|\bscore\b|\bost\b/i.test(s.l)]};
+for(const k in CATS)CAT[k]=!["rep","ost"].includes(k)||CAT[k]!==false;
+const pool=()=>{const any=[...LIB.values()].some(s=>s.lib),t=THR||(any?0:5);return[...LIB.values()].filter(s=>s.lib||(t&&s.n>=t))};
+const flags=s=>Object.keys(CATS).filter(k=>CATS[k][1](s));
+const lines=()=>TXT.toLowerCase().split("\n").map(x=>x.trim()).filter(Boolean);
+function excl(s){const m=M[(s.u||s.t+s.a)];if(m!=null)return m;if(flags(s).some(k=>CAT[k]))return true;const h=(s.t+" "+s.a+" "+s.l).toLowerCase();return lines().some(x=>h.includes(x))}
+const pre=()=>pool().filter(s=>!excl(s));
+let DM={};
+/* duplicate key: title minus remaster/deluxe tags + first artist + version tags (live, reprise, remix... never merge across those) */
+const dkey=s=>{const t=s.t.toLowerCase(),g=(t.match(/\b(live|reprise|acoustic|demo|instrumental|remix|radio edit|alternate|a cappella|karaoke|extended|edit)\b/g)||[]).sort().join("+")+(/\blive\b/i.test(s.l)?"+albumlive":"");return t.replace(/\s*[-–(\[]\s*((\d{4}\s*)?(re-?master(ed)?|deluxe|expanded|anniversary|bonus track|mono|stereo)[^)\]]*)[)\]]?\s*$/,"").replace(/\s+/g," ").trim()+"|"+(s.a||"").toLowerCase().split(",")[0].trim()+"|"+g};
+function dg(){const m={};pre().forEach(s=>(m[dkey(s)]=m[dkey(s)]||[]).push(s));return Object.entries(m).filter(e=>e[1].length>1).map(e=>[e[0],e[1].sort((a,b)=>a.t.length-b.t.length)])}
+function dupbox(){const D=window.DG=dg();if(!D.length)return"";return`<div class="box"><b>Possible duplicates (${D.length})</b><div class="s">Remasters and deluxe copies of the same song. Untick any you want to keep separate. Live, reprise, acoustic, demo and remix versions are never merged.</div><div style="max-height:260px;overflow:auto">${D.map((e,i)=>`<label class="li"><span>${esc(e[1][0].t)} <span class="s">· ${esc(e[1][0].a)} · also: ${e[1].slice(1).map(s=>esc(s.t)).join("; ")}</span></span><input type="checkbox" data-a="dm" data-i="${i}" ${DM[e[0]]===false?"":"checked"}></label>`).join("")}</div></div>`}
+const kept=()=>{const g=new Set;dg().forEach(([k,a])=>{if(DM[k]!==false)a.slice(1).forEach(s=>g.add(s))});return pre().filter(s=>!g.has(s))},kc=()=>{const e=$("#kc");if(e)e.textContent=kept().length+" songs kept · Next →"};
+function found(){const q=($("#q")?.value||"").toLowerCase();if(!q)return"";const r=pool().filter(s=>(s.t+" "+s.a+" "+s.l).toLowerCase().includes(q));window.R=r;
+ return`<div class="row"><span class="s">${r.length} matches</span><button class="b" data-a="all" data-v="1">Exclude all shown</button><button class="b" data-a="all" data-v="0">Keep all shown</button></div>`+r.slice(0,40).map((s,i)=>`<label class="li"><span>${esc(s.t)} <span class="s">· ${esc(s.a)} · ${esc(s.l)}</span></span><input type="checkbox" data-a="ex" data-i="${i}" ${excl(s)?"checked":""}></label>`).join("")}
+function rules(){const P=pool();return`<h1>Exclusions</h1><p class="s">${P.length} songs in your pool. Tick what to drop before the bracket is built. Flagged categories are guesses from titles, albums and lengths.</p><div class="box">${Object.keys(CATS).map(k=>`<label><input type="checkbox" data-a="cat" data-k="${k}" ${CAT[k]?"checked":""}> ${CATS[k][0]} <span class="s">(${P.filter(CATS[k][1]).length} flagged)</span></label>`).join("")}</div>
+<div class="box"><b>Drop anything containing…</b><div class="s">One per line; matches title, artist or album.</div><textarea id="tx" rows="3" placeholder="e.g. oppenheimer">${esc(TXT)}</textarea></div>
+<div class="box"><b>Find songs or albums to exclude or keep</b><div class="row"><input type="search" id="q" placeholder="Search title, artist, album"></div><div id="fd"></div></div>
+${dupbox()}
+<div class="row"><button class="b" data-a="go" data-v="imp">← Back</button><button class="b p" id="kc" data-a="go" data-v="set">${kept().length} songs kept · Next →</button></div>`}
+/* 4 · SETUP */
+function roundOptions(R,selected=0,direct=false){return Array.from({length:Math.max(1,R)},(_,i)=>{const r=direct?i:R-1-i,val=direct?r:i;return`<option value="${val}"${val===selected?" selected":""}>${rn(r,R)}</option>`}).join("")}
+function setup(){const K=kept(),c=f=>K.filter(f).length,mx=1<<Math.floor(Math.log2(Math.max(K.length,2))),R=Math.ceil(Math.log2(Math.max(K.length,2)));
+ return`<h1>Build your bracket</h1><p class="s">${K.length} songs are in.</p><div class="box"><label>Seed by <select id="sd"><option value="rand">Random</option><option value="old">Longest held / first heard (${c(s=>s.ad)} have dates)</option><option value="new">Most recent finds first</option><option value="plays">Most streams (${c(s=>s.n)} have data)</option></select></label>
+<label>Bracket size <select id="sz" data-all="${K.length}"><option value="0">All ${K.length} songs</option>${[1024,512,256,128,64,32,16].filter(n=>n<K.length).map(n=>`<option value="${n}">Top ${n} by seed</option>`).join("")}</select></label>
+<label><input type="checkbox" id="ap" checked> Keep songs from the same album apart in Round 1</label><label><input type="checkbox" id="bl"> Blind mode (hide artist and album)</label><label><input type="checkbox" id="sp"> Speed mode (10 seconds, then a coin flip)</label></div>
+<div class="box"><b>Favorites</b> <span class="s">(optional)</span><div class="s">Songs you pick here are spread evenly across the bracket so they can’t meet until late.</div><div class="row"><input type="search" id="fq" placeholder="Search to add favorites"></div><div id="fc" class="s">${Object.values(FV).filter(Boolean).length} favorites</div><div id="ff"></div></div>
+<div class="box"><b>Wildcard comeback round</b><div class="s">Any bookmarked song that gets eliminated can earn a return match at the round you choose. Each comeback is a separate match against an entrant who survived to that round; the winner takes that slot, then the round’s ordinary matchup still happens. Completed matches are never erased.</div><label>Return matches happen at <select id="rr0">${roundOptions(R,0,false)}</select></label><div class="s">If that round is already complete, the app won’t rewrite it; choose a later round on the Saved tab for future returns. Songs eliminated after the selected round is complete cannot go back in time.</div></div>
+<div class="row"><button class="b" data-a="go" data-v="rules">← Back</button><button class="b p" data-a="start">Start tournament</button></div>
+<p class="s">Seed 1 faces the lowest seed. If the count isn’t a power of two, top seeds get byes. “Seed by” also decides who makes the cut for a smaller bracket.</p>`}
+function start(){let K=kept();const sd=$("#sd").value,k={old:s=>s.ad?-s.ad:-9e15,new:s=>s.ad||-9e15,plays:s=>s.n||0,rand:()=>0}[sd];
+ K=K.map(s=>[s,k(s),Math.random()]).sort((a,b)=>b[1]-a[1]||b[2]-a[2]).map(x=>x[0]);const cap=+$("#sz").value||K.length;K=K.slice(0,cap);if(K.length<2){msg="Need at least 2 songs.";return}
+ let P=1;while(P<K.length)P*=2;let o=[1];while(o.length<P)o=o.flatMap(x=>[x,2*o.length+1-x]);const sl=o.map(x=>x<=K.length?x-1:-1);
+ if($("#ap").checked)for(let i=0;i<P/2;i++){const a=sl[2*i],b=sl[2*i+1];if(a<0||b<0||K[a].l!==K[b].l)continue;
+  for(const j of[...Array(P/2).keys()].sort(()=>Math.random()-.5)){const c=sl[2*j],d=sl[2*j+1];if(j==i||c<0||d<0||K[c].l==K[b].l||K[d].l==K[a].l)continue;[sl[2*i+1],sl[2*j+1]]=[sl[2*j+1],sl[2*i+1]];break}}
+ const fv=K.map((s,i)=>FV[s.u||s.t+s.a]?i:-1).filter(i=>i>=0).sort(()=>Math.random()-.5),f=fv.length,used=new Set;
+ fv.forEach((id,j)=>{const lo=Math.floor(j*P/f),hi=Math.floor((j+1)*P/f),c=[];for(let t=lo;t<hi;t++)if(sl[t]>=0&&!used.has(t))c.push(t);if(!c.length)return;const t=c[Math.random()*c.length|0],k=sl.indexOf(id);[sl[k],sl[t]]=[sl[t],sl[k]];used.add(t)});
+ S={songs:K.map(s=>({t:s.t,a:s.a,l:s.l,y:s.y,p:s.p,n:s.n,u:s.u})),slots:sl,P,V:[],B:[],L:{},H:[],wc:[],o:{blind:$("#bl").checked,speed:$("#sp").checked,rr:+$("#rr0").value||0}};sv();view="m";step="play"}
+/* 5 · ENGINE — state = seeded slots + manual picks (L) + vetoes (V); everything else is derived */
+const wcKey=w=>w.key||("wc_"+w.id),wcDone=w=>S.L[wcKey(w)]!==undefined&&S.L[wcKey(w)]!==null;
+function returnRound(R=Math.log2(S.P)){const off=Math.max(0,Math.min(R-1,Number.isFinite(S.o?.rr)?S.o.rr:0));return R-1-off}
+function effectiveSlot(c,r,k,fallback){const key=r+"_"+k;return c.E&&Object.prototype.hasOwnProperty.call(c.E,key)?c.E[key]:fallback}
+function calc(){const P=S.P,R=Math.log2(P),W=[],out={},wins={};let cur=null;const E={};
+ for(let r=0;r<R;r++){W[r]=[];for(let i=0;i<P>>(r+1);i++){const g=k=>{let v=r?W[r-1][k]:S.slots[k];const q=(S.wc||[]).filter(w=>w.r==r&&w.k==k);if(q.length&&v!==undefined){for(const wc of q){if(v===undefined)break;if(v<0||S.V.includes(v)||S.V.includes(wc.id))continue;const key=wcKey(wc),m=S.L[key];if(m===v||m===wc.id){if(m===wc.id){if(v>=0)out[v]=r;delete out[wc.id]}else out[wc.id]=r;wins[m]=(wins[m]||0)+1;v=m}else{if(!cur)cur=["wc",r,v,wc.id,key];v=undefined;break}}if(v!==undefined)E[r+"_"+k]=v}return v},a=g(2*i),b=g(2*i+1);let w;if(a===undefined||b===undefined)continue;
+  if(a<0&&b<0)w=-1;else if(a<0)w=b;else if(b<0)w=a;else{const va=S.V.includes(a),vb=S.V.includes(b);if(va&&!vb)w=b;else if(vb&&!va)w=a;else{const m=S.L[r+"_"+i];if(m===a||m===b)w=m}}
+  if(w===undefined){if(!cur)cur=[r,i,a,b];continue}W[r][i]=w;if(a>=0&&b>=0){wins[w]=(wins[w]||0)+1;out[w===a?b:a]=r}}}
+ return{W,out,wins,cur,R,E,ch:W[R-1][0]}}
+const rn=(r,R)=>R-r==1?"Final":R-r==2?"Semifinals":R-r==3?"Quarterfinals":"Round of "+2**(R-r);
+function rank(c){const N=S.songs.length,R=c.R;const fin=id=>id===c.ch?[100,"Champion"]:id in c.out?[c.out[id],c.out[id]==R-1?"Runner-up":c.out[id]==R-2?"Semifinalist":c.out[id]==R-3?"Quarterfinalist":"Out in "+rn(c.out[id],R)]:[50,"Still alive"];
+ return S.songs.map((s,i)=>({i,s,f:fin(i),w:c.wins[i]||0})).filter(x=>!S.V.includes(x.i)||x.f[0]!=50).sort((a,b)=>b.f[0]-a.f[0]||b.w-a.w||a.i-b.i)}
+function pick(id){const c=calc();if(!c.cur||(id!=c.cur[2]&&id!=c.cur[3]))return;const k=c.cur[0]==="wc"?c.cur[4]:c.cur[0]+"_"+c.cur[1];S.L[k]=id;S.H.push(k);sv();render()}
+function sim(){const c=calc();if(c.cur)pick(Math.random()<.5?c.cur[2]:c.cur[3])}
+function undo(){const k=S.H.pop();if(k==null)return;if(k[0]=="v")S.V=S.V.filter(x=>x!=+k.slice(1));else delete S.L[k];sv();render()}
+function prune(){const c=calc();for(const w of (S.wc||[])){if(!wcDone(w))continue;let v=w.r?c.W[w.r-1]?.[w.k]:S.slots[w.k];if(v===undefined)continue;for(const q of S.wc.filter(x=>x.r===w.r&&x.k===w.k)){const qk=wcKey(q),m=S.L[qk];if(m===undefined)break;if(m!==v&&m!==q.id){delete S.L[qk];continue}v=m;if(q===w)break}}for(const k of Object.keys(S.L)){if(k==="wc"||k.startsWith("wc_"))continue;const[r,i]=k.split("_").map(Number),it=r?c.W[r-1]:S.slots;if(!it||S.L[k]!==it[2*i]&&S.L[k]!==it[2*i+1])delete S.L[k]}S.H=S.H.filter(k=>k[0]==="v"||k in S.L)}
+function rvok(c){const[r,i]=rv;if(!(r>=0&&r<c.R))return false;const it=r?c.W[r-1]:S.slots,a=it[2*i],b=it[2*i+1];return a!=null&&b!=null&&a>=0&&b>=0&&!S.V.includes(a)&&!S.V.includes(b)&&!((S.wc||[]).some(w=>w.r===r&&(w.k>>1)===i))}
+function opn(c,r,k){const i=r>=c.R?0:k>>1,o=rv;rv=[Math.min(r,c.R-1),i];if(rvok(c)){view="m";return""}rv=o;return"That match can’t be reopened (bye, not set yet, excluded, or wildcard)."}
+function review(c){const[r,i]=rv,it=r?c.W[r-1]:S.slots,a=it[2*i],b=it[2*i+1],w=c.W[r][i];return`<div class="s">✏️ Reviewing · ${rn(r,c.R)} · ${w===undefined?"not picked yet":"tap a song to set the winner; results that depend on it will be cleared"}</div><div class="vs">${card(a,0,"rpk",w===a)}<div class="or">vs</div>${card(b,0,"rpk",w===b)}</div><div class="row"><button class="b" data-a="rvx">← Back to current match</button></div>`}
+function done(c){const s=S.songs[c.ch],bl=S.o.blind,T=rank(c).slice(0,5),pa=pathTxt(c,c.ch).split("\n").slice(1).join("\n");
+ return`<div class="box" style="text-align:center"><div class="s">🏆 Champion</div><h1>${esc(s.t)}</h1>${bl?"":`<div class="s">${esc(s.a)}${s.l?" · "+esc(s.l):""}${s.y?" · "+s.y:""}</div>`}<div class="s">${S.songs.length} songs · ${Object.keys(c.out).length} matches</div><div class="row" style="justify-content:center">${url(s.u)}</div></div><h3>Top 5</h3>${T.map((x,n)=>`<div class="li"><span>${n+1}. ${esc(x.s.t)}${bl?"":` <span class="s">· ${esc(x.s.a)}</span>`}</span><span class="s">${x.f[1]} · ${x.w} wins</span></div>`).join("")}<h3>Champion’s path</h3><div class="box s" style="white-space:pre-line">${esc(pa)}</div><div class="row"><button class="b" data-a="tab" data-v="r">Ranking</button><button class="b" data-a="tab" data-v="p">Report</button><button class="b" data-a="tab" data-v="c">Card</button><button class="b" data-a="tab" data-v="k">Bracket</button><button class="b" data-a="rev" data-r="${c.R-1}" data-i="0">✏️ Revisit final</button></div><div class="row"><button class="b p" data-a="rst">${cf=="rst"?"Tap again to confirm":"↺ Reset picks"}</button><button class="b" data-a="new">${cf=="new"?"Tap again to confirm":"🔄 New bracket"}</button></div><div class="s">Reset keeps this exact bracket and your saved songs. New bracket starts over from import.</div>`}
+function hist(c){const ks=S.H.filter(k=>k[0]!=="v"&&k in S.L).reverse(),sh=hall?ks:ks.slice(0,40);
+ return`<h3>History (${ks.length})</h3><p class="s">Your picks, newest first. Tap ✏️ on a main-bracket match to change its winner.</p>`+(sh.map(k=>{if(k.startsWith("wc_")){const w=S.wc.find(x=>wcKey(x)===k);if(!w)return"";let o=w.r?c.W[w.r-1]?.[w.k]:S.slots[w.k];if(o==null||o<0)return"";for(const q of S.wc.filter(x=>x.r===w.r&&x.k===w.k)){if(wcKey(q)===k)break;const m=S.L[wcKey(q)];if(m===o||m===q.id)o=m}const winner=S.L[k];if(winner!==o&&winner!==w.id)return"";const loser=winner===w.id?o:w.id;return`<div class="li"><span><span class="s">Wildcard · ${rn(w.r,c.R)}</span><br><b>${esc(S.songs[winner].t)}</b> <span class="s">def. ${esc(S.songs[loser].t)}</span></span><span class="s">comeback</span></div>`}const[r,i]=k.split("_").map(Number),it=r?c.W[r-1]:S.slots,a=it?.[2*i],b=it?.[2*i+1],w=S.L[k],o=w===a?b:a;if(a==null||b==null||(w!==a&&w!==b)||o<0)return"";return`<div class="li"><span><span class="s">${rn(r,c.R)}</span><br><b>${esc(S.songs[w].t)}</b> <span class="s">def. ${esc(S.songs[o].t)}</span></span><button class="b" data-a="rev" data-r="${r}" data-i="${i}">✏️</button></div>`}).join("")||'<p class="s">No picks yet.</p>')+(ks.length>40?`<div class="row"><button class="b" data-a="hall">${hall?"Show latest 40":"Show all "+ks.length}</button></div>`:"")}
+function bsr(){const q=bq.trim().toLowerCase();if(!q)return"";const r=S.songs.map((s,i)=>[s,i]).filter(([s])=>(s.t+(S.o.blind?"":" "+s.a+" "+s.l)).toLowerCase().includes(q)).slice(0,8);
+ return r.map(([s,i])=>`<div class="li" data-a="bsj" data-id="${i}" style="cursor:pointer"><span>${esc(s.t)}${S.o.blind?"":` <span class="s">· ${esc(s.a)}</span>`}</span><span class="s">Find</span></div>`).join("")||'<div class="s">No matches.</div>'}
+/* 6 · VIEWS */
+const url=u=>u?`<a class="b" target="_blank" rel="noopener" href="https://open.spotify.com/track/${u.split(":").pop()}">▶ Spotify</a>`:"";
+const card=(id,sw,act="pick",win)=>{const s=S.songs[id],bm=S.B.includes(id);return`<div class="card${win?" win":""}" data-a="${act}" data-id="${id}"><div class="t">${esc(s.t)}</div>${S.o.blind?'<div class="s">Blind mode: pick on the song alone</div>':`<div class="s">${esc(s.a)}</div><div class="s">${esc(s.l)}${s.y?" · "+s.y:""}</div>`}<div class="foot"><button class="b ${bm?"on":""}" data-a="bm" data-id="${id}">🔖 ${bm?"Saved":"Save"}</button>${sw?`<button class="b" data-a="swap" data-id="${id}">🔀 Swap</button>`:""}<button class="b" data-a="veto" data-id="${id}">✕ Exclude</button>${url(s.u)}</div></div>`};
+function match(c){if(rv)return review(c);if(!c.cur)return done(c);
+ const[r,i,a,b]=c.cur,N=S.songs.length-S.V.length,left=N-Object.keys(c.out).length+S.V.filter(v=>!(v in c.out)).length,played=S.H.filter(k=>k in S.L&&k[0]!=="v").length;
+ return`<div class="s">${r==="wc"?"🔥 Wildcard comeback · challenge for a place in "+rn(i,c.R):rn(r,c.R)} · ${played} matches recorded · ${left} songs left</div><div class="bar"><i style="width:${100*Object.keys(c.out).length/(S.songs.length-1)}%"></i></div>${S.o.speed?'<div class="s">⏱ <b id="tm">10</b>s</div>':""}<div class="vs">${card(a,r==0)}<div class="or">vs</div>${card(b,r==0)}</div><div class="row"><button class="b" data-a="undo" ${S.H.length?"":"disabled"}>↶ Undo</button><span class="s">← → to pick · Z to undo</span></div><div class="row"><button class="b" data-a="sim">🎲 Coin-flip this match</button></div>`}
+const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+const csvOut=c=>"Rank,Finish,Title,Artist,Album,URI\n"+rank(c).map((x,n)=>[n+1,x.f[1],x.s.t,x.s.a,x.s.l,x.s.u].map(q).join(",")).join("\n");
+function ranking(c){const t=csvOut(c);return`<h3>Full ranking</h3><p class="s">Finishing order, updated live. Paste into a spreadsheet. The URI column works with Spotify’s “add to playlist” by pasting.</p><textarea id="o" rows="10" readonly>${esc(t)}</textarea><div class="row"><button class="b" data-a="cp">Copy CSV</button><button class="b" data-a="cp" data-v="u">Copy top 100 links</button></div>`}
+function report(c){const R=rank(c),agg=(f,min=1,avg)=>{const m={};R.forEach(x=>{const k=f(x.s);if(k){(m[k]=m[k]||[0,0]);m[k][0]+=x.w;m[k][1]++}});return Object.entries(m).filter(e=>e[1][1]>=min).map(e=>[e[0],avg?e[1][0]/e[1][1]:e[1][0],e[1][1]]).sort((a,b)=>b[1]-a[1]).slice(0,7)};
+ const L=(t,d,u)=>`<h3>${t}</h3>`+d.map((e,i)=>`<div class="li"><span>${i+1}. ${esc(e[0])}</span><span class="s">${u?e[1].toFixed(1):e[1]} · ${e[2]} songs</span></div>`).join("");
+ 
+ return`<h1>Taste report</h1><p class="s">Points = matches won by a song. Updates as you play.</p>${L("Artists",agg(s=>s.a.split(",")[0]))}${L("Album power ranking (avg wins, 3+ songs)",agg(s=>s.l,3,1),1)}${L("Decades",agg(s=>s.y&&Math.floor(s.y/10)*10+"s"))}`}
+function cardv(c){return`<h1>Results card</h1><div class="row"><select id="cn"><option>4</option><option selected>8</option><option>16</option></select><span class="s">Screenshot or long-press the image to save it.</span></div><canvas id="cv" style="width:100%"></canvas>`}
+function draw(c){const cv=$("#cv");if(!cv)return;const n=+$("#cn").value,x=cv.getContext("2d"),R=rank(c).slice(0,n);x.fillStyle="#0b0b0b";x.fillRect(0,0,1080,1350);x.fillStyle="#1ed760";x.fillRect(60,70,120,8);
+ x.fillStyle="#fff";x.font="bold 78px Georgia,serif";x.fillText("My Song Bracket",60,170);x.fillStyle="#b3b3b3";x.font="30px system-ui,sans-serif";x.fillText(`Final ${n} of ${S.songs.length} songs`,60,225);
+ const h=Math.min(120,1020/n);R.forEach((r,i)=>{const y=290+i*h;x.fillStyle=i?"#fff":"#1ed760";x.font=`bold ${i?Math.min(40,h*.38):54}px system-ui,sans-serif`;x.fillText(i+1+".",60,y+h*.5);
+  const fit=(t,w)=>{while(x.measureText(t).width>w&&t.length>3)t=t.slice(0,-2);return t};let tt=r.s.t;x.fillText(fit(tt,860),150,y+h*.5);x.fillStyle="#b3b3b3";x.font=`${Math.min(26,h*.26)}px system-ui,sans-serif`;if(!S.o.blind)x.fillText(fit(r.s.a,860),150,y+h*.5+Math.min(34,h*.32))});}
+/* Wildcard comebacks: each bookmarked eliminated song gets its own challenge in the selected round. Challenges are queued in open entrant slots; the regular round match remains intact. */
+const elig=c=>S.B.filter(id=>id in c.out&&!S.V.includes(id)&&c.ch!==id&&!(S.wc||[]).some(w=>w.id===id));
+function branchHasSong(r,k){const span=2**r,lo=k*span,hi=Math.min(S.P,lo+span);return S.slots.slice(lo,hi).some(id=>id>=0)}
+function openReturnSlots(c,r){return Array.from({length:S.P>>r},(_,k)=>k).filter(k=>branchHasSong(r,k)&&c.W[r][k>>1]===undefined)}
+function syncComebacks(c){if(!Array.isArray(S.wc))S.wc=[];let changed=false;const drop=S.wc.filter(w=>!wcDone(w)&&(!S.B.includes(w.id)||!(w.id in c.out)||S.V.includes(w.id)||c.ch===w.id||(c.W[w.r]&&c.W[w.r][w.k>>1]!==undefined)));if(drop.length){const keys=new Set(drop.map(wcKey));S.wc=S.wc.filter(w=>!drop.includes(w));for(const key of keys)delete S.L[key];S.H=S.H.filter(k=>!keys.has(k));changed=true;c=calc()}
+ const r=returnRound(c.R),ids=elig(c);for(const id of ids){const slots=openReturnSlots(c,r);if(!slots.length)break;const load=k=>S.wc.filter(w=>w.r===r&&w.k===k).length;slots.sort((a,b)=>load(a)-load(b)||a-b);const k=slots[0],w={id,r,k,key:"wc_"+id,lossRound:c.out[id]};S.wc.push(w);changed=true}
+ return changed}
+function setReturnRound(r){const c=calc(),pending=S.wc.filter(w=>!wcDone(w)),keys=new Set(pending.map(wcKey));S.wc=S.wc.filter(w=>wcDone(w));for(const key of keys)delete S.L[key];S.H=S.H.filter(k=>!keys.has(k));S.o.rr=Math.max(0,Math.min(c.R-1,c.R-1-r));syncComebacks(calc());sv()}
+function redo(c){const r=returnRound(c.R),e=elig(c),pending=S.wc.filter(w=>!wcDone(w)),played=S.wc.length-pending.length,slots=openReturnSlots(c,r),targetDone=slots.length===0;return`<h3>Wildcard comebacks</h3><div class="box"><label>Return round <select id="rr">${roundOptions(c.R,r,true)}</select></label><div class="s">${e.length} eliminated bookmarked song${e.length===1?"":"s"} waiting to be scheduled · ${pending.length} comeback match${pending.length===1?"":"es"} scheduled · ${played} completed comeback${played===1?"":"s"}.</div><p class="s">Every bookmarked song that is eliminated can get a separate challenge. Challenges are queued into unfinished slots in the chosen round. A challenger faces the current occupant of that slot; the winner occupies it, then the ordinary matchup for that round is played. Completed matches are never erased.</p>${targetDone?'<p class="s">No unfinished matchup slots remain in this round, so new returns cannot be inserted here. Choose a later round to give future eliminated saved songs a chance; past results stay intact.</p>':'<p class="s">New eligible songs are scheduled automatically while the selected round still has unfinished matchups. Songs eliminated after that round is fully complete cannot return retroactively.</p>'}</div>`}
+/* Recap card: bracket of the final N on the left, placings on the right, drawn at 2x for sharpness */
+function draw(c){const cv=$("#cv");if(!cv)return;const R=c.R,n=Math.min(+$("#cn").value,S.P),L=Math.log2(n),r0=R-L,Wd=1200,Ht=Math.max(560,190+n*46),d=2;
+ cv.width=Wd*d;cv.height=Ht*d;const x=cv.getContext("2d");x.scale(d,d);
+ const G="#1ed760",fit=(t,w)=>{while(x.measureText(t).width>w&&t.length>3)t=t.slice(0,-2);return t},F=(s,b)=>x.font=(b?"bold ":"")+s+"px system-ui,sans-serif";
+ x.fillStyle="#0b0b0b";x.fillRect(0,0,Wd,Ht);x.fillStyle=G;x.fillRect(40,34,90,6);
+ x.fillStyle="#fff";x.font="bold 44px Georgia,serif";x.fillText("Final "+n+" Recap",40,92);x.fillStyle="#b3b3b3";F(18);x.fillText(S.songs.length+" songs · "+new Date().toLocaleDateString(),40,122);
+ const cw=Math.min(190,820/(L+1)),rh=(Ht-210)/n;let ys=[];
+ for(let j=0;j<=L;j++){const r=r0+j,it=r?c.W[r-1]:S.slots,ny=[];x.fillStyle="#b3b3b3";F(13,1);x.fillText(r<R?rn(r,R).toUpperCase():"CHAMPION",40+j*cw,166);
+  for(let k=0;k<n>>j;k++){const y=j?(ys[2*k]+ys[2*k+1])/2:190+rh*(k+.5),px=40+j*cw;ny.push(y);
+   if(j){x.strokeStyle="#444";x.lineWidth=1;x.beginPath();x.moveTo(px-18,ys[2*k]);x.lineTo(px-9,ys[2*k]);x.lineTo(px-9,ys[2*k+1]);x.lineTo(px-18,ys[2*k+1]);x.moveTo(px-9,y);x.lineTo(px,y);x.stroke()}
+   const id=effectiveSlot(c,r,k,it[k]),ok=id!=null&&id>=0,m=r<R?c.W[r][k>>1]:id,w=ok&&m===id,lost=ok&&m!==undefined&&m!==id;
+   x.strokeStyle=w?G:"#555";x.lineWidth=w?2:1;x.beginPath();x.moveTo(px,y);x.lineTo(px+cw-18,y);x.stroke();
+   if(ok){x.fillStyle=lost?"#777":"#fff";F(Math.min(15,rh*.4),w);x.fillText(fit(S.songs[id].t,cw-24),px+2,y-5)}}
+  ys=ny}
+ x.fillStyle="#2c2c2c";x.fillRect(895,150,1,Ht-190);x.fillStyle="#fff";F(16,1);x.fillText("PLACES",915,166);
+ const P2=rank(c).slice(0,n),lh=Math.min(44,(Ht-210)/P2.length);
+ P2.forEach((e,i)=>{const y=200+i*lh;x.fillStyle=i?"#fff":G;F(Math.min(16,lh*.4),1);x.fillText((i+1)+".",915,y);x.fillText(fit(e.s.t,230),945,y);if(!S.o.blind&&lh>30){x.fillStyle="#999";F(12);x.fillText(fit(e.s.a,230),945,y+14)}})}
+function vetoes(){return`<h3>Excluded (${S.V.length})</h3>`+(S.V.map(i=>`<div class="li"><span>${esc(S.songs[i].t)} <span class="s">· ${esc(S.songs[i].a)}</span></span><button class="b" data-a="rest" data-id="${i}">Restore</button></div>`).join("")||'<p class="s">Exclude a song with ✕ on a match card. Restore puts it back in its match.</p>')}
+function save(){return`<h3>Save progress</h3><p class="s">Copy this code to continue on another device. It includes your songs, so it can be long.</p><div class="row"><button class="b" data-a="mk">Create code</button></div><textarea id="sc" rows="4" placeholder="Code appears here"></textarea><h3>Restore</h3><textarea id="rc" rows="3" placeholder="Paste a code"></textarea><div class="row"><button class="b" data-a="ld">Load code</button><button class="b" data-a="new">${cf=="new"?"Tap again to confirm":"Start over"}</button></div><div class="s">${esc(msg)}</div>`}
+function importv(){return`<h1>Song Bracket</h1><p>Turn the songs you love into a tournament. Everything stays in your browser. Nothing is uploaded.</p>
+<div class="box"><b>1 · Add your data</b><p class="s">Any mix of: <b>CSV</b> exports of liked songs or playlists from Exportify (exportify.net), the <b>YourLibrary.json</b> file from Spotify’s “Account data” export, and <b>Streaming_History_Audio_*.json</b> from “Extended streaming history” (adds play counts and first-heard dates).</p><input type="file" id="fl" multiple accept=".csv,.json"><div class="s">${esc(msg)}</div></div>
+<div class="box"><label class="s">Also include songs streamed (but not saved) at least <input type="number" id="th" min="0" value="${THR}" style="width:5em"> times. 0 = library only.</label></div>
+<div class="row"><button class="b p" data-a="go" data-v="rules" ${LIB.size?"":"disabled"}>Next: exclusions →</button>${S?'<button class="b" data-a="resume">Resume saved bracket</button>':""}</div>
+<div class="box"><b>Have a save code?</b><textarea id="rc" rows="2" placeholder="Paste it here"></textarea><div class="row"><button class="b" data-a="ld">Load code</button></div></div>`}
+function nav(){const t=(v,l)=>`<button class="b ${view==v?"on":""}" data-a="tab" data-v="${v}">${l}</button>`;return`<div class="row">${t("m","Match")}${t("b","🔖 Saved ("+S.B.length+")")}${t("k","Bracket")}${t("h","History")}${t("r","Ranking")}${t("p","Report")}${t("c","Card")}${t("v","Excluded ("+S.V.length+")")}${t("s","Save code")}</div>`}
+const fin=(id,c)=>id===c.ch?"🏆 Champion":id in c.out?"Out · "+rn(c.out[id],c.R):S.V.includes(id)?"Excluded":"Still alive";
+function saved(c){const B=S.B;return redo(c)+`<h3>Saved songs (${B.length})</h3>`+(B.map(id=>`<div class="li"><span>${esc(S.songs[id].t)} <span class="s">· ${esc(S.songs[id].a)}</span><br><span class="s">${fin(id,c)}</span></span><span>${url(S.songs[id].u)} <button class="b" data-a="path" data-id="${id}">🧭</button> <button class="b" data-a="bm" data-id="${id}">✕</button></span></div>`).join("")||'<p class="s">Tap 🔖 Save on a match card, or tap a song in the Bracket. Saved songs stay here after they’re eliminated, showing where they went out.</p>')+(B.length?`<div class="row"><button class="b" data-a="cp" data-v="b">Copy list</button></div><textarea id="o" rows="5" readonly></textarea>`:"")}
+let kp=null,jm=false,bmode="b",pp=null,FV={},rv=null,bq="",bnote="",hall=false,cf=null;
+function sq(b){const st=b.scrollTop,c=[...b.querySelectorAll(".bkc")],f=Math.min(c.length-1,Math.max(0,Math.round(b.scrollLeft/168)));if(b.dataset.f==f)return;const H=Math.max(22,(c[0].children.length>>f)*22),o=+b.dataset.H;
+ c.forEach((e,r)=>{e.classList.toggle("gone",r<f);e.style.setProperty("--h",(22<<Math.max(0,r-f))+"px");e.style.height=H+"px"});
+ if(o)b.scrollTop=st*H/o;b.dataset.f=f;b.dataset.H=H}
+function pathTxt(c,id){const L=[S.songs[id].t+" — "+S.songs[id].a],wcs=S.wc||[];
+ const baseFor=w=>w.r?c.W[w.r-1]?.[w.k]:S.slots[w.k];
+ const occupantBefore=w=>{let v=baseFor(w);for(const q of wcs.filter(x=>x.r===w.r&&x.k===w.k)){if(q===w)break;const m=S.L[wcKey(q)];if(m===v||m===q.id)v=m}return v};
+ const finalFor=w=>effectiveSlot(c,w.r,w.k,baseFor(w));
+ const trace=(start,forced)=>{for(let r=start;r<c.R;r++){const it=(r?c.W[r-1]:S.slots).slice();for(let j=0;j<it.length;j++)it[j]=effectiveSlot(c,r,j,it[j]);const k=(r===start&&forced!=null)?forced:it.indexOf(id);if(k<0)break;const o=it[k^1],winner=c.W[r][k>>1],n=rn(r,c.R),on=o>=0?S.songs[o].t:"";if(o===-1){L.push(n+": bye");continue}if(winner===undefined){const q=wcs.find(q=>q.r===r&&q.k===k&&S.L[wcKey(q)]===undefined);L.push(n+": "+(q?"wildcard comeback pending":"vs "+(o===undefined?"waiting for an opponent":on)+" (to play)"));break}if(winner===id){L.push(n+": beat "+on+(S.V.includes(o)?" (excluded)":""));continue}L.push(n+": lost to "+on);break}};
+ const successful=wcs.find(w=>w.id===id&&wcDone(w)&&S.L[wcKey(w)]===id&&finalFor(w)===id);
+ if(successful){const lossRound=Number.isInteger(successful.lossRound)?successful.lossRound:0;for(let r=0;r<=Math.min(lossRound,successful.r);r++){const it=(r?c.W[r-1]:S.slots).slice();const k=it.indexOf(id);if(k<0)break;const win=c.W[r][k>>1],o=it[k^1],n=rn(r,c.R),on=o>=0?S.songs[o].t:"";if(win===id)L.push(n+": beat "+on);else{L.push(n+": lost to "+on);break}}const opp=occupantBefore(successful);L.push("Wildcard comeback at "+rn(successful.r,c.R)+": beat "+(opp>=0?S.songs[opp].t:"an open slot"));trace(successful.r,successful.k)}
+ else{trace(0,null);const attempt=wcs.find(w=>w.id===id);if(attempt){if(!wcDone(attempt))L.push("Wildcard comeback at "+rn(attempt.r,c.R)+": pending");else{const end=finalFor(attempt);if(end!==id)L.push("Wildcard comeback at "+rn(attempt.r,c.R)+": did not win the return slot; it went to "+(end>=0?S.songs[end].t:"no entrant"))}}}
+ if(c.ch===id)L.push("🏆 Champion");return L.join("\n")}
+function pathbox(c){if(pp==null)return'<div class="s">Tap any song in the bracket to see its path.</div>';const t=pathTxt(c,pp);return`<textarea id="o" rows="${t.split("\n").length+1}" readonly>${esc(t)}</textarea><div class="row"><button class="b" data-a="cp" data-v="t">Copy path</button><button class="b" data-a="bmode" data-v="b">Close</button></div>`}
+function ff(){const q=($("#fq")?.value||"").toLowerCase();if(!q)return"";const r=kept().filter(s=>(s.t+" "+s.a+" "+s.l).toLowerCase().includes(q));window.RF=r;return r.slice(0,40).map((s,i)=>`<label class="li"><span>${esc(s.t)} <span class="s">· ${esc(s.a)} · ${esc(s.l)}</span></span><input type="checkbox" data-a="fv" data-i="${i}" ${FV[s.u||s.t+s.a]?"checked":""}></label>`).join("")}
+const fcount=()=>{const e=$("#fc");if(e)e.textContent=Object.values(FV).filter(Boolean).length+" favorites"};
+function bracket(c){const R=c.R;let hd="",cols="";
+ for(let r=0;r<=R;r++){hd+=`<div class="bkl">${r<R?rn(r,R):"🏆 Champion"}</div>`;const it=r?c.W[r-1]:S.slots;
+  cols+=`<div class="bkc" style="--h:${22<<r}px">${Array.from({length:S.P>>r},(_,k)=>{const id=effectiveSlot(c,r,k,it[k]);if(id==null||id<0)return`<div class="bki"></div>`;
+   let cl="w";if(r<R){const m=c.W[r][k>>1];cl=m===undefined?"":m==id?"w":"l"}
+   return`<div class="bki"><div class="bkt ${cl}" data-a="bk" data-id="${id}" data-r="${r}" data-k="${k}" title="${esc(S.songs[id].t+" — "+S.songs[id].a)}">${S.B.includes(id)?"🔖 ":""}${esc(S.songs[id].t)}</div></div>`}).join("")}</div>`}
+ return`<div class="row"><button class="b ${bmode=="b"?"on":""}" data-a="bmode" data-v="b">🔖 Tap = bookmark</button><button class="b ${bmode=="p"?"on":""}" data-a="bmode" data-v="p">🧭 Tap = show path</button><button class="b ${bmode=="m"?"on":""}" data-a="bmode" data-v="m">✏️ Tap = open matchup</button><button class="b" data-a="jmp">Jump to current round</button></div>${bnote?`<div class="s">${esc(bnote)}</div>`:""}${bmode=="p"?pathbox(c):`<div class="s">green = advanced · faded = eliminated${bmode=="m"?" · tap a song to reopen its match":""}</div>`}<div class="row"><input type="search" id="bs" placeholder="Find a song in the bracket" value="${esc(bq)}" style="flex:1;min-width:0"></div><div id="bsr">${bsr()}</div><div class="bk" id="bk"><div class="bkh">${hd}</div><div class="bkb">${cols}</div></div>`}
+function swap(id){const c=calc();if(!c.cur||c.cur[0]!=0)return;const[,i,a,b]=c.cur,opp=id==a?b:a,k=S.slots.indexOf(id);let cand=[];
+ for(let j=0;j<S.P/2;j++){if(j==i||c.W[0][j]!==undefined)continue;if(S.slots[2*j]>=0&&S.slots[2*j+1]>=0)cand.push(2*j,2*j+1)}
+ const good=cand.filter(t=>S.songs[S.slots[t]].l!==S.songs[opp].l);if(good.length)cand=good;if(!cand.length)return;
+ const t=cand[Math.random()*cand.length|0];[S.slots[k],S.slots[t]]=[S.slots[t],S.slots[k]];sv();render()}
+function render(){clearInterval(tm);if(step==="play"&&S&&syncComebacks(calc()))sv();const o=$("#bk");if(jm){kp=null;jm=false}else if(o)kp=[o.scrollLeft,o.scrollTop];if(step!="play"||!S){A.innerHTML=step=="imp"?importv():step=="rules"?rules():setup();if(step=="rules")$("#fd").innerHTML=found();return}
+ const c=calc();if(rv&&!rvok(c))rv=null;A.innerHTML=nav()+(view=="m"?match(c):view=="b"?saved(c):view=="k"?bracket(c):view=="h"?hist(c):view=="r"?ranking(c):view=="p"?report(c):view=="c"?cardv(c):view=="v"?vetoes():save());if(view=="c")draw(c);if(view=="k"){const b=$("#bk");if(b){if(kp){b.scrollLeft=kp[0];sq(b);b.scrollTop=kp[1]}else{const r=c.cur?c.cur[0]:Math.max(0,c.R-1);b.scrollLeft=r*168;sq(b);b.scrollTop=c.cur?Math.max(0,2*c.cur[1]*22-120):0}}}
+ if(view=="m"&&!rv&&S.o.speed&&c.cur){let t=10;tm=setInterval(()=>{t--;const e=$("#tm");if(e)e.textContent=t;if(t<=0){clearInterval(tm);pick(Math.random()<.5?c.cur[2]:c.cur[3])}},1e3)}}
+/* 7 · EVENTS, SAVE CODES */
+async function enc(o){const u=new Uint8Array(await new Response(new Blob([JSON.stringify(o)]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)}
+async function dec(c){const u=Uint8Array.from(atob(c.trim()),x=>x.charCodeAt(0));return JSON.parse(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).text())}
+A.addEventListener("change",e=>{const t=e.target;if(t.id=="fl")ingest(t.files);else if(t.id=="th")THR=+t.value||0;else if(t.id=="rr"){setReturnRound(+t.value);render()}else if(t.id=="sz"){const all=+t.dataset.all||2,n=+t.value||all,R=Math.ceil(Math.log2(Math.max(n,2))),old=+($("#rr0")?.value||0);$("#rr0").innerHTML=roundOptions(R,Math.min(old,R-1),false)}else if(t.id=="cn")draw(calc());else if(t.dataset.a=="cat"){CAT[t.dataset.k]=t.checked;render()}
+ else if(t.dataset.a=="ex"){const s=window.R[+t.dataset.i];M[s.u||s.t+s.a]=t.checked;kc()}else if(t.dataset.a=="fv"){const s=window.RF[+t.dataset.i];FV[s.u||s.t+s.a]=t.checked;fcount()}else if(t.dataset.a=="dm"){const k=window.DG[+t.dataset.i][0];if(t.checked)delete DM[k];else DM[k]=false;kc()}});
+A.addEventListener("scroll",e=>{if(e.target.id=="bk")sq(e.target)},true);
+A.addEventListener("input",e=>{if(e.target.id=="q")$("#fd").innerHTML=found();if(e.target.id=="bs"){bq=e.target.value;$("#bsr").innerHTML=bsr()}if(e.target.id=="fq")$("#ff").innerHTML=ff();if(e.target.id=="tx"){TXT=e.target.value;kc()}});
+A.addEventListener("click",async e=>{if(e.target.closest("a"))return;const el=e.target.closest("[data-a]");if(!el||el.tagName=="INPUT")return;const a=el.dataset.a,id=+el.dataset.id,v=el.dataset.v;if(a!="rst"&&a!="new")cf=null;
+ if(a=="pick")return pick(id);if(a=="undo")return undo();if(a=="swap")return swap(id);if(a=="sim")return sim();
+ if(a=="veto"){if(!S.V.includes(id)){S.V.push(id);S.H.push("v"+id)}sv()}
+ else if(a=="rest"){S.V=S.V.filter(x=>x!=id);sv()}
+ else if(a=="bm"){S.B=S.B.includes(id)?S.B.filter(x=>x!=id):S.B.concat(id);sv()}
+ else if(a=="jmp")jm=true;
+ else if(a=="bk"){if(bmode=="p")pp=id;else if(bmode=="m")bnote=opn(calc(),+el.dataset.r,+el.dataset.k);else{S.B=S.B.includes(id)?S.B.filter(x=>x!=id):S.B.concat(id);sv()}}
+ else if(a=="rpk"){const c=calc(),[r,i]=rv,k=r+"_"+i;if(id!==c.W[r][i]){S.L[k]=id;if(!S.H.includes(k))S.H.push(k);prune()}rv=null;sv()}
+ else if(a=="rvx")rv=null;
+ else if(a=="rev"){rv=[+el.dataset.r,+el.dataset.i];view="m"}
+ else if(a=="hall")hall=!hall;
+ else if(a=="rst"){if(cf!="rst")cf="rst";else{cf=null;S.L={};S.H=[];S.V=[];S.wc=[];rv=null;view="m";sv()}}
+ else if(a=="bsj"){const b=$("#bk");if(!b)return;const es=[...b.querySelectorAll(`.bkt[data-id="${id}"]`)];if(!es.length)return;const el2=es[es.length-1];b.scrollLeft=[...b.querySelectorAll(".bkc")].indexOf(el2.closest(".bkc"))*168;sq(b);el2.classList.add("hl");b.scrollTop+=el2.getBoundingClientRect().top-b.getBoundingClientRect().top-b.clientHeight/2;setTimeout(()=>el2.classList.remove("hl"),2500);return}
+ else if(a=="bmode")bmode=v;
+ else if(a=="path"){pp=id;bmode="p";view="k";jm=true}
+ else if(a=="go"){TXT=$("#tx")?TXT:TXT;step=v}
+ else if(a=="all"){window.R.forEach(s=>M[s.u||s.t+s.a]=v=="1");$("#fd").innerHTML=found();kc();return}
+ else if(a=="start"){start();kp=null}
+ else if(a=="resume")step="play";
+ else if(a=="tab"){view=v;bnote="";if(v=="m")rv=null;if(v=="k")jm=true}
+ else if(a=="cp"){const t=v=="t"?pathTxt(calc(),pp):v=="b"?S.B.map(i=>S.songs[i].t+" — "+S.songs[i].a).join("\n"):v=="u"?rank(calc()).slice(0,100).filter(x=>x.s.u).map(x=>"https://open.spotify.com/track/"+x.s.u.split(":").pop()).join("\n"):csvOut(calc()),o=$("#o");o.value=t;o.select();try{await navigator.clipboard.writeText(t)}catch(x){try{document.execCommand("copy")}catch(y){}}return}
+ else if(a=="mk"){$("#sc").value=await enc(S);$("#sc").select();return}
+ else if(a=="ld"){try{S=normalizeState(await dec($("#rc").value));sv();step="play";view="m";msg=""}catch(x){msg="That code didn’t work.";if(step!="play"){alert(msg)}}}
+ else if(a=="new"){if(cf!="new")cf="new";else{cf=null;S=null;try{localStorage.removeItem(KEY)}catch(x){}step="imp"}}
+ render()});
+addEventListener("keydown",e=>{if(step!="play"||!S||view!="m"||rv||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;if(e.key=="z"||e.key=="Z")return undo();const c=calc();if(!c.cur)return;if(e.key=="ArrowLeft")pick(c.cur[2]);if(e.key=="ArrowRight")pick(c.cur[3])});
+render();
+</script></body></html>
